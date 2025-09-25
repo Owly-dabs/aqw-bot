@@ -1,16 +1,20 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
+	"log"
 	"os"
+	"strings"
+
+	"aqw/internal/logic"
+	"aqw/internal/window"
 
 	"github.com/spf13/cobra"
 )
 
-
+var cfgName string // holds --config flag value
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -22,30 +26,53 @@ examples and usage of using your application. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Run: func(cmd *cobra.Command, args []string) {
+		// Initialize the window
+		win, err := window.NewWindow()
+		if err != nil {
+			log.Fatalf("❌ Failed to create new window: %v", err)
+		}
+
+		// Choose config based on flag
+		var cfg logic.FarmConfig
+		switch strings.ToLower(cfgName) {
+		case "", "default":
+			cfg = logic.DefaultCfg
+		case "cont":
+			cfg = logic.ContinuousCfg
+		case "warrior":
+			cfg = logic.WarriorCfg
+		case "healer":
+			cfg = logic.HealerCfg
+		default:
+			log.Fatalf("❌ Unknown config %q. Valid options: default, warrior, healer", cfgName)
+		}
+
+		// Start farming
+		if err := logic.ExecuteFarm(win, cfg); err != nil {
+			log.Fatalf("❌ Farm encountered an error: %v", err)
+		}
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
+	// --config / -c selects which config to use
+	rootCmd.PersistentFlags().StringVarP(
+		&cfgName,
+		"config",
+		"c",
+		"default",
+		"Which config to use: default | warrior | healer",
+	)
 
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.aqwbot.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
+	// Example of another local flag (kept from your template)
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
-
-
